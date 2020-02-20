@@ -1,0 +1,103 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\usepackage{amsmath}
+\title{CIS 3207\\*Project 2A.\\*Shell Pseudocode}
+\author{Leomar Dur\'an}
+\date{\(19^{\text{th}}\) February 2020}
+
+\usepackage[bookmarksopen=true]{hyperref}
+\usepackage{bookmark}
+
+\usepackage{enumitem}
+\setlistdepth{9}
+
+\begin{document}
+
+\maketitle
+
+\section{Main program}
+
+\begin{enumerate}
+    \item
+        Start a loop while prompting.
+        \begin{enumerate}
+            \item
+                Parse the commandline string.
+        \end{enumerate}
+    \item
+        Loop back.
+\end{enumerate}
+
+\section{Prompt}
+\begin{enumerate}
+    \item
+        Check the prompt environment variable.
+    \item
+        Decode it and print it as appropriate.
+    \item
+        Accept a commandline string from the prompt.
+    \item
+        If the string contains an end-of-file character (Ctrl+\texttt{D}), is the string ``\texttt{exit}", or the string ``\texttt{quit}", return false.
+    \item
+        Return true and the commandline string.
+\end{enumerate}
+
+\section{Parse the commandline string}
+\begin{enumerate}
+    \item
+        Create a queue of strings.
+    \item
+        Initialize a left counter to zero.
+    \item
+        Initialize a state that can be ``in text" or ``in space" to ``in space".
+    \item
+        Start a loop until the null character `\texttt{\textbackslash0}' is reached.
+        \begin{enumerate}
+            \item
+                Depending on the state.
+                \begin{enumerate}
+                    \item
+                        Case ``in text":
+                            \begin{enumerate}
+                                \item
+                                    If the current character is a space:
+                                    \begin{itemize}
+                                        \item
+                                            Change the state to ``in space".
+                                        \item
+                                            Copy a substring from the left counter to one less than the current character to the.
+                                        \item
+                                            Enqueue the substring.
+                                    \end{itemize}
+                            \end{enumerate}
+                    \item
+                        Case ``in space":
+                            \begin{enumerate}
+                                \item
+                                    If the current character is a non-space character:
+                                        \begin{itemize}
+                                            \item
+                                                Change the state to ``in text".
+                                            \item
+                                                Set the left counter to the current character.
+                                        \end{itemize}
+                            \end{enumerate}
+                \end{enumerate}
+        \end{enumerate}
+    \item
+        Loop back.
+    \item
+        Create an array with the same size as the queue.
+    \item
+        While the queue has a next string.
+        \begin{enumerate}
+            \item
+                Dequeue the item into the array.
+        \end{enumerate}
+    \item
+        Return the length and the starting position of the array.
+\end{enumerate}
+
+\end{document}
+
