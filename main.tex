@@ -11,6 +11,17 @@
 
 \usepackage{enumitem}
 \setlistdepth{9}
+\newlist{deepenum}{enumerate}{10}
+\setlist[deepenum,1]{label=\arabic*.}
+\setlist[deepenum,2]{label=(\alph*)}
+\setlist[deepenum,3]{label=(\roman*)}
+\setlist[deepenum,4]{label=\Alph*.}
+\setlist[deepenum,5]{label=\Roman*.}
+\setlist[deepenum,6]{label=\arabic*.}
+\setlist[deepenum,7]{label=(\alph*)}
+\setlist[deepenum,8]{label=(\roman*)}
+\setlist[deepenum,9]{label=\Alph*.}
+\setlist[deepenum,10]{label=\Roman*.}
 
 \begin{document}
 
@@ -18,19 +29,45 @@
 
 \section{Main program}
 
-\begin{enumerate}
+\begin{deepenum}
     \item
-        Start a loop while prompting.
-        \begin{enumerate}
+        Start a loop while \textbf{Calling} prompting.
+        \begin{deepenum}
             \item
-                Parse the commandline string.
-        \end{enumerate}
+                \textbf{Call} Parse the commandline string.
+            \item
+                Set up the redirects for file input and output.
+            \item
+                Depending on the first argument in the parsing:
+                \begin{deepenum}
+                    \item
+                        Case ``\texttt{cd}": \textbf{Call} Change the directory.
+                    \item
+                        Case ``\texttt{clr}": \textbf{Call} Clear the screen.
+                    \item
+                        Case ``\texttt{dir}": \textbf{Call} Print the directory listing. See 2020--02--19 (Shell, Week 2) (PPTX), slide 8 for the implementation.
+                    \item
+                        Case ``\texttt{env}": \textbf{Call} Access the environment variable.
+                    \item
+                        Case ``\texttt{echo}": \textbf{Call} Echo the commandline.
+                    \item
+                        Case ``\texttt{help}": \textbf{Call} Ask help with the current command.
+                    \item
+                        Case ``\texttt{pause}": \textbf{Call} Pause until the user hits Enter.
+                    \item
+                        Default: \textbf{Call} Run an external command.
+                \end{deepenum}
+            \item
+                If parallel next, set up the next file to run concurrent to this one.
+            \item
+                If pipe out, then wait before running the next file.
+        \end{deepenum}
     \item
         Loop back.
-\end{enumerate}
+\end{deepenum}
 
 \section{Prompt}
-\begin{enumerate}
+\begin{deepenum}
     \item
         Check the prompt environment variable.
     \item
@@ -41,63 +78,254 @@
         If the string contains an end-of-file character (Ctrl+\texttt{D}), is the string ``\texttt{exit}", or the string ``\texttt{quit}", return false.
     \item
         Return true and the commandline string.
-\end{enumerate}
+\end{deepenum}
+
+\section{Process structure}
+\begin{itemize}
+    \item
+        command name : string
+    \item
+        arguments : string[]
+    \item
+        input file : FILE*
+    \item
+        input append : Boolean
+    \item
+        output file : FILE*
+    \item
+        pipe in : Process*
+    \item
+        pipe out : Process*
+    \item
+        parallel next : Process*
+\end{itemize}
 
 \section{Parse the commandline string}
-\begin{enumerate}
+\begin{deepenum}
+    \item
+        Let \(\text{redirect characters} := \{``<", ``>", ``|", ``\&" \}\).
     \item
         Create a queue of strings.
     \item
         Initialize a left counter to zero.
     \item
-        Initialize a state that can be ``in text" or ``in space" to ``in space".
+        Initialize a tokenizer state that can be ``in text", ``in space", ``in redirect" to ``in space".
+    \item
+        Initialize a in-quote state that can be ``outside quotes", ``in double quotes" or ``in single quotes" to ``outside quotes".
     \item
         Start a loop until the null character `\texttt{\textbackslash0}' is reached.
-        \begin{enumerate}
+        \begin{deepenum}
             \item
-                Depending on the state.
-                \begin{enumerate}
+                Depending on the in-quote state:
+                \begin{deepenum}
+                    \item
+                        Case ``outside quotes":
+                        \begin{deepenum}
+                            \item
+                                If the current character is a single quote:
+                                \begin{deepenum}
+                                    \item
+                                        Change the state to ``in single quotes".
+                                \end{deepenum}
+                            \item
+                                Otherwise, if the current character is in double quotes:
+                                \begin{deepenum}
+                                    \item
+                                        Change the state to ``in double quotes".
+                                \end{deepenum}
+                        \end{deepenum}
+                    \item
+                        Case ``in single quotes":
+                        \begin{deepenum}
+                            \item
+                                If the current character is a single quote:
+                                    \begin{deepenum}
+                                        \item
+                                            Change the state to ``outside quotes".
+                                    \end{deepenum}
+                            \item
+                                Otherwise, skip this iteration of the loop.
+                        \end{deepenum}
+                    \item
+                        Case ``in double quotes":
+                        \begin{deepenum}
+                            \item
+                                If the current character is a double quote:
+                                    \begin{deepenum}
+                                        \item
+                                            Change the state to ``outside quotes".
+                                    \end{deepenum}
+                            \item
+                                Otherwise, skip this iteration of the loop.
+                        \end{deepenum}
+                \end{deepenum}
+            \item
+                Depending on the tokenizer state:
+                \begin{deepenum}
                     \item
                         Case ``in text":
-                            \begin{enumerate}
+                            \begin{deepenum}
                                 \item
                                     If the current character is a space:
-                                    \begin{itemize}
+                                    \begin{deepenum}
                                         \item
                                             Change the state to ``in space".
                                         \item
                                             Copy a substring from the left counter to one less than the current character to the.
                                         \item
                                             Enqueue the substring.
-                                    \end{itemize}
-                            \end{enumerate}
+                                    \end{deepenum}
+                                \item
+                                    If the current character is in the list of redirect characters:
+                                    \begin{deepenum}
+                                        \item
+                                            Remember the character.
+                                        \item
+                                            Change the state to ``in redirect".
+                                    \end{deepenum}
+                            \end{deepenum}
                     \item
                         Case ``in space":
-                            \begin{enumerate}
+                            \begin{deepenum}
                                 \item
                                     If the current character is a non-space character:
-                                        \begin{itemize}
+                                        \begin{deepenum}
                                             \item
                                                 Change the state to ``in text".
                                             \item
                                                 Set the left counter to the current character.
-                                        \end{itemize}
-                            \end{enumerate}
-                \end{enumerate}
-        \end{enumerate}
+                                            \item
+                                                Stay on this character.
+                                        \end{deepenum}
+                            \end{deepenum}
+                    \item
+                        Case ``in redirect":
+                            \begin{deepenum}
+                                \item
+                                    If the current character is another redirect character:
+                                        \begin{deepenum}
+                                            \item
+                                                Copy the characters from the original redirect to this character to redirect.
+                                            \item
+                                                Depending on the original character, place this as an input file, output file, pipe out, or parallel next of the current file.
+                                            \item
+                                                If this is a pipe out, mark the current file as its pipe in, and change to this file.
+                                            \item
+                                                If this is parallel next, change to this file.
+                                        \end{deepenum}
+                            \end{deepenum}
+                \end{deepenum}
+        \end{deepenum}
     \item
         Loop back.
     \item
         Create an array with the same size as the queue.
     \item
         While the queue has a next string.
-        \begin{enumerate}
+        \begin{deepenum}
             \item
                 Dequeue the item into the array.
-        \end{enumerate}
+        \end{deepenum}
     \item
         Return the length and the starting position of the array.
-\end{enumerate}
+\end{deepenum}
+
+\section{Change the directory}
+\begin{deepenum}
+    \item
+        Use \texttt{chdir} on the second argument.
+    \item
+        If the result is nonzero, check \texttt{errno} and print the directory name and error message.
+\end{deepenum}
+
+\section{Clear the screen}
+\begin{deepenum}
+    \item
+        Print the escape sequence ``\verb|\033[H\033[2J|".
+\end{deepenum}
+
+\section{Access the environment variable.}
+\begin{deepenum}
+    \item
+        Depending on the number of arguments:
+        \begin{deepenum}
+            \item
+                Case 1:
+                \begin{deepenum}
+                    \item
+                        Loop through the environment variables and print them one per line.
+                \end{deepenum}
+            \item
+                Case 2:
+                \begin{deepenum}
+                    \item
+                        Print the value of the environment variable specified by the second argument.
+                \end{deepenum}
+            \item
+                Case 3:
+                \begin{deepenum}
+                    \item
+                        Replace the value of the environment variable specified by the second argument by the third argument.
+                \end{deepenum}
+        \end{deepenum}
+\end{deepenum}
+
+\section{Echo the commandline}
+\begin{deepenum}
+    \item
+        Search for the first instead of ``echo" in the original prompt.
+    \item
+        Print every character one character after that until any other special characters, and a newline.
+\end{deepenum}
+
+\section{Ask help with the current command}
+\begin{deepenum}
+    \item
+        Check if the second argument is an internal command.
+        \begin{deepenum}
+            \item
+                If so, print a manual page for that command.
+            \item
+                If not, \textbf{Call} Run the external help command.
+        \end{deepenum}
+    \item
+        Use the \texttt{more} filter to split up the pages.
+\end{deepenum}
+
+\section{Pause until the user hits [Enter]}
+\begin{deepenum}
+    \item
+        Print ``Please press [Enter] to continue . . ."
+    \item
+        Loop until the user hits enter.
+        \begin{deepenum}
+            \item Get a character from the user.
+            \item Flush the input stream.
+            \item Check if the character was newline or carriage return.
+        \end{deepenum}
+\end{deepenum}
+
+\section{Run an external command}
+\begin{deepenum}
+    \item
+        If the command is not help:
+        \begin{deepenum}
+            \item
+                Check if it exists in the current directory.
+            \item
+                If it does not exist in the current directory:
+                \begin{deepenum}
+                    \item
+                        Loop through the paths stored in the \texttt{\$PATH} variable.
+                    \item
+                        Check each path for a command with that name until it is found.
+                \end{deepenum}
+        \end{deepenum}
+    \item
+        Create a child process.
+    \item
+        Launch the external command using the new child process in its appropriate directory.
+\end{deepenum}
 
 \end{document}
 
