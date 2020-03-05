@@ -41,9 +41,13 @@ parse(char *haystack, int *argc, char ***argv)
 	int len;	/* length of the new token */
 	char *new_token = NULL;	/* the new token */
 
-	/* loop until end of haystack or first comment character */
-	for (; *haystack && !in_class(haystack, comment); ++haystack) {
-	}
+	/* loop until end of haystack */
+	for (; *haystack; ++haystack) {
+		/* break on first comment character */
+		if (in_class(haystack, comment)) {
+			break;
+		} /* end if (in_class(haystack, comment)) */
+	} /* end for (; *haystack; ) */
 
 	/* copy the new token */
 	len = haystack - offset - 1;
@@ -61,11 +65,20 @@ parse(char *haystack, int *argc, char ***argv)
 void
 main(int argc, char** argv)
 {
-	char *haystack = "hello, world! #how are you?";
-	int pargc;
-	char **pargv;
+	char *haystacks[] = {
+		"hello, world! #how are you?",
+		"hello, world!#how are you?",
+		"hello, world!",
+		"#how are you?",
+		NULL
+	};
+	char **phaystack;
+	int pargc;	/* parsed argc */
+	char **pargv;	/* parsed argv */
 
-	parse(haystack, &pargc, &pargv);
-	printf("%d:%s\n", pargc, pargv[0]);
+	for (phaystack = haystacks; *phaystack; ++phaystack) {
+		parse(*phaystack, &pargc, &pargv);
+		printf("%d:\"%s\"\n", pargc, pargv[0]);
+	}
 }
 
