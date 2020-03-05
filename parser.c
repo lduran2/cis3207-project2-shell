@@ -9,22 +9,30 @@
 #include <string.h>
 #include "linkedlist.h"
 
+char
+*subclass_of(char *needle, char **haystack)
+{
+	int len;	/* stores the haystack length */
+	/* loop through the class strings */
+	for (; *haystack; ++haystack) {
+		/* find length of the current class string */
+		len = strlen(*haystack);
+		/* compare to the current needle string*/
+		if (0 == strncmp(*haystack, needle, len)) {
+			/* if found, return the string in haystack */
+			return *haystack;
+		}
+	} /* end for (; *haystack; ) */
+	/* otherwise, it was not found, so return NULL */
+	return NULL;
+} /* end *subclass_of(char*, char**) */
+
 bool
 in_class(char *needle, char **haystack)
 {
-	int len;	/* stores the haystack length */
-	/* loop through the class characters */
-	for (; *haystack; ++haystack) {
-		/* find length of the current class character */
-		len = strlen(*haystack);
-		/* compare to the current needle character */
-		if (0 == strncmp(*haystack, needle, len)) {
-			/* if found, return try */
-			return true;
-		}
-	} /* end for (; *haystack; ) */
-	/* otherwise, it was not found, so return false */
-	return false;
+	/* the needle is in the haystack class */
+	/* if its equivalent subclass is not NULL */
+	return (NULL != subclass_of(needle, haystack));
 } /* end in_class(char*, char**) */
 
 void
@@ -43,14 +51,14 @@ parse(char *haystack, int *argc, char ***argv)
 
 	/* loop until end of haystack */
 	for (; *haystack; ++haystack) {
-		/* break on first comment character */
+		/* break on first comment string */
 		if (in_class(haystack, comment)) {
 			break;
 		} /* end if (in_class(haystack, comment)) */
 	} /* end for (; *haystack; ) */
 
 	/* copy the new token */
-	len = haystack - offset - 1;
+	len = haystack - offset;
 	new_token = malloc(len * sizeof(char));
 	strncpy(new_token, offset, len);
 	/* enqueue the new token */
