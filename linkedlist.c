@@ -6,8 +6,6 @@
  * For    : CIS 3207, Spring 2020
  */
 #include "linkedlist.h"
-#include <stdio.h>
-#include <string.h>
 
 /*
  * Creates a new singly linked list node that holds the given data.
@@ -31,7 +29,17 @@ Queue
 	Node *phead = node_new(NULL);	/* create the head pointer */
 	queue->phead = phead;	/* set the head pointer */
 	queue->tail = phead;	/* the tail is also the head pointer */
+	queue->length = (size_t)0;	/* start empty */
 } /* end *queue_new() */
+
+/**
+ * @returns the length of the queue
+ */
+size_t
+queue_length(Queue *queue)
+{
+	return queue->length;
+} /* end queue_length(Queue*) */
 
 /**
  * Adds a new element at the end of the queue.
@@ -42,8 +50,10 @@ Queue
 void
 queue_enqueue(Queue *queue, Node *new_element)
 {
-	queue->tail->next = new_element;	/* set the next node of the current tail node */
+	/* set the next node of the current tail node */
+	queue->tail->next = new_element;
 	queue->tail = new_element;	/* set the new tail node */
+	++queue->length;	/* increment the length */
 } /* end *queue_enqueue(Queue*, Node*) */
 
 /**
@@ -59,6 +69,7 @@ Node
 	Node *dequeued = queue->phead->next;
 	/* shift the head pointer to the next node */
 	queue->phead->next = dequeued->next;
+	--queue->length;	/* decrement the length */
 	return dequeued;	/* return the node of the element dequeued */
 } /* end *queue_dequeue(Queue*) */
 
@@ -69,7 +80,7 @@ bool
 queue_is_empty(Queue *queue)
 {
 	return (NULL == queue->phead->next);
-}
+} /* end queue_is_empty(Queue*) */
 
 /**
  * @returns if the given queue has a next element.
@@ -78,32 +89,22 @@ bool
 queue_has_next(Queue *queue)
 {
 	return (!queue_is_empty(queue));
-}
+} /* end queue_has_next(Queue*) */
 
 /**
- * Tests the various linked list and queue functions.
+ * Creates an array copy of the queue and stores it in ***array.
  */
 void
-main(int argc, char **argv)
+queue_to_array(Queue *queue, void ***array, size_t data_size)
 {
-	char *samples[] = { "0", "1", "4", "9", "16", "25", NULL };
-	char **psample;
-	Queue *queue = queue_new();
-	char *string;
-	Node *dequeued;
+	Node *node = queue->phead;
+	void **local_array = malloc(queue->length * data_size);
+	int k;
 
-	for (psample = samples; *psample; ++psample) {
-		printf("%lu\n", (long unsigned)(*psample));
-		queue_enqueue(queue, node_new(*psample));
+	for (k = 0; node = node->next; ++k) {
+		local_array[k] = node->data;
 	}
-	printf("\n");
 
-	int k = 0;
-	while (queue_has_next(queue)) {
-		dequeued = queue_dequeue(queue);
-		string = dequeued->data;
-		free(dequeued);
-		printf("%d\t%s\n", k++, string);
-	}
-} /* end main(int, char**) */
+	*array = local_array;
+} /* end queue_to_array(Queue*, void***, size_t) */
 

@@ -8,6 +8,9 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#ifndef LDURAN2_SHELL_LINKEDLIST_H
+#define LDURAN2_SHELL_LINKEDLIST_H
+
 /**
  * Structure for basic singly linked list node.
  */
@@ -31,12 +34,19 @@ typedef struct Queue {
 	Node *phead;
 	/* the tail node */
 	Node *tail;
+	/* the size of the queue */
+	size_t length;
 } Queue;
 
 /**
  * Creates a new FIFO queue.
  */
 Queue *queue_new();
+
+/**
+ * @returns the length of the queue.
+ */
+size_t queue_length(Queue *queue);
 
 /**
  * Adds a new element at the end of the queue.
@@ -63,4 +73,11 @@ bool queue_is_empty(Queue *queue);
  * @returns if the given queue has a next element.
  */
 bool queue_has_next(Queue *queue);
+
+/**
+ * Creates an array copy of the queue and stores it in ***array.
+ */
+void queue_to_array(Queue *queue, void ***array, size_t data_size);
+
+#endif
 
