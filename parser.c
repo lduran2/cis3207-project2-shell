@@ -36,47 +36,80 @@ in_class(char *needle, char **haystack)
 } /* end in_class(char*, char**) */
 
 void
+push_next_token(Queue *queue, char **offset, char *end)
+{
+	int len;	/* length of the new token */
+	char *new_token = NULL;	/* the new token */
+
+	/* copy the new token */
+	len = end - *offset;
+	new_token = malloc(len * sizeof(char));
+	strncpy(new_token, *offset, len);
+	/* enqueue the new token */
+	queue_enqueue(queue, node_new(new_token));
+	offset = &end;
+}
+
+void
 parse(char *haystack, int *argc, char ***argv)
 {
 	/* queue to store the unknown number of arguments temporarily */
 	Queue *nargv = queue_new();
 
+	/* the escape prefix class */
+	char *escape[] = { "\\", NULL };
 	/* the quotation delimiter class */
 	char *delims[] = { "\"", "'", NULL };
-	/* the comment class */
+	/* the comment prefix class */
 	char *comment[] = { "#", NULL };
+	char *separators[] = { " ", "\t", "\r", "\n", NULL };
 
+	/* subclass of the delimiters that the current haystack is in */
 	char *delim_subclass;
+	/* whether the state is in the separator class */
+	bool in_separator = false;
 
 	/* for creating new tokens */
 	char *offset = haystack;	/* offset within haystack */
-	int len;	/* length of the new token */
-	char *new_token = NULL;	/* the new token */
 
 	/* loop until end of haystack */
-	for (; *haystack; ++haystack) {
-		/* if the current character is in the delimiter class */
-		delim_subclass = subclass_of(haystack, delims);
-		if (NULL != delim_subclass) {
-			printf("skipping to next delimiter:\n\t%s\n", haystack);
-			/* seek past the next instance of the delimiter */
-			haystack = strstr(haystack + 1, delim_subclass);
-			printf("\t%s\n", haystack);
-			continue;
-		} /* end if (NULL != delim_subclass) */
+	while (*haystack) {
+		if (!in_separator) {
+			/* if the current character is in the */
+			/* delimiter class */
+			delim_subclass = subclass_of(haystack, delims);
+			if (NULL != delim_subclass) {
+				/* seek past the next instance */
+				/* of the delimiter */
+				haystack = strstr(haystack + 1,
+					delim_subclass) + 1;
+				continue;
+			} /* end if (NULL != delim_subclass) */
 
-		/* break on first comment string */
-		if (in_class(haystack, comment)) {
-			break;
-		} /* end if (in_class(haystack, comment)) */
-	} /* end for (; *haystack; ) */
+			/* break on first comment string */
+			if (in_class(haystack, comment)) {
+				break;
+			} /* end if (in_class(haystack, comment)) */
 
-	/* copy the new token */
-	len = haystack - offset;
-	new_token = malloc(len * sizeof(char));
-	strncpy(new_token, offset, len);
-	/* enqueue the new token */
-	queue_enqueue(nargv, node_new(new_token));
+			if (in_class(haystack, separators)) {
+				push_next_token(nargv,
+					&offset, haystack);
+				in_separator = true;
+			}
+
+			++haystack;
+		}
+		else {
+			if (in_class(haystack, separators)) {
+				++haystack;
+			}
+			else {
+				in_separator = false;
+			}
+		} /* end switch ((int)in_separator) */
+	} /* end while (*haystack) */
+
+	push_next_token(nargv, &offset, haystack);
 
 	/* set argc and argv */
 	*argc = (int)queue_length(nargv);
@@ -94,6 +127,8 @@ main(int argc, char** argv)
 		"#how are you?",
 		"hello 'world, #how are you?'",
 		"hello \"world, #how are you?\"",
+		"hello \\'world, #how are you?\\'",
+		"hello \\\"world, #how are you?\\\"",
 		NULL
 	};
 	char **phaystack;
@@ -102,7 +137,7 @@ main(int argc, char** argv)
 
 	for (phaystack = haystacks; *phaystack; ++phaystack) {
 		parse(*phaystack, &pargc, &pargv);
-		printf("%d:\"%s\"\n", pargc, pargv[0]);
+		printf("%d:\"%s\"\t\"%s\"\n", pargc, *phaystack, pargv[0]);
 	}
 }
 
