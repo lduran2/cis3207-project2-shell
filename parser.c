@@ -41,8 +41,12 @@ parse(char *haystack, int *argc, char ***argv)
 	/* queue to store the unknown number of arguments temporarily */
 	Queue *nargv = queue_new();
 
+	/* the quotation delimiter class */
+	char *delims[] = { "\"", "'", NULL };
 	/* the comment class */
 	char *comment[] = { "#", NULL };
+
+	char *delim_subclass;
 
 	/* for creating new tokens */
 	char *offset = haystack;	/* offset within haystack */
@@ -51,6 +55,16 @@ parse(char *haystack, int *argc, char ***argv)
 
 	/* loop until end of haystack */
 	for (; *haystack; ++haystack) {
+		/* if the current character is in the delimiter class */
+		delim_subclass = subclass_of(haystack, delims);
+		if (NULL != delim_subclass) {
+			printf("skipping to next delimiter:\n\t%s\n", haystack);
+			/* seek past the next instance of the delimiter */
+			haystack = strstr(haystack + 1, delim_subclass);
+			printf("\t%s\n", haystack);
+			continue;
+		} /* end if (NULL != delim_subclass) */
+
 		/* break on first comment string */
 		if (in_class(haystack, comment)) {
 			break;
@@ -78,6 +92,8 @@ main(int argc, char** argv)
 		"hello, world!#how are you?",
 		"hello, world!",
 		"#how are you?",
+		"hello 'world, #how are you?'",
+		"hello \"world, #how are you?\"",
 		NULL
 	};
 	char **phaystack;
