@@ -36,18 +36,21 @@ in_class(char *needle, char **haystack)
 } /* end in_class(char*, char**) */
 
 void
-push_next_token(Queue *queue, char **offset, char *end)
+push_next_token(Queue *queue, char *offset, char *end)
 {
 	int len;	/* length of the new token */
 	char *new_token = NULL;	/* the new token */
 
+	/* calculate and check the length */
+	len = end - offset;
+	/* if the length is 0, then don't push */
+	if (0 == len) return;
+
 	/* copy the new token */
-	len = end - *offset;
 	new_token = malloc(len * sizeof(char));
-	strncpy(new_token, *offset, len);
+	strncpy(new_token, offset, len);
 	/* enqueue the new token */
 	queue_enqueue(queue, node_new(new_token));
-	offset = &end;
 }
 
 void
@@ -93,7 +96,7 @@ parse(char *haystack, int *argc, char ***argv)
 
 			if (in_class(haystack, separators)) {
 				push_next_token(nargv,
-					&offset, haystack);
+					offset, haystack);
 				in_separator = true;
 			}
 
@@ -104,12 +107,13 @@ parse(char *haystack, int *argc, char ***argv)
 				++haystack;
 			}
 			else {
+				offset = haystack;
 				in_separator = false;
 			}
 		} /* end switch ((int)in_separator) */
 	} /* end while (*haystack) */
 
-	push_next_token(nargv, &offset, haystack);
+	push_next_token(nargv, offset, haystack);
 
 	/* set argc and argv */
 	*argc = (int)queue_length(nargv);
@@ -120,6 +124,8 @@ parse(char *haystack, int *argc, char ***argv)
 void
 main(int argc, char** argv)
 {
+	int k;
+
 	char *haystacks[] = {
 		"hello, world! #how are you?",
 		"hello, world!#how are you?",
@@ -131,13 +137,16 @@ main(int argc, char** argv)
 		"hello \\\"world, #how are you?\\\"",
 		NULL
 	};
-	char **phaystack;
+	char **phaystack;	/* pointer to haystacks */
 	int pargc;	/* parsed argc */
 	char **pargv;	/* parsed argv */
 
 	for (phaystack = haystacks; *phaystack; ++phaystack) {
 		parse(*phaystack, &pargc, &pargv);
-		printf("%d:\"%s\"\t\"%s\"\n", pargc, *phaystack, pargv[0]);
+		printf("%d:\"%s\"\n", pargc, *phaystack);
+		for (k = 0; k < pargc; ++k) {
+			printf("\t\"%s\"\n", pargv[k]);
+		}
 	}
 }
 
