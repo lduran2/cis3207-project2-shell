@@ -9,6 +9,13 @@
 #include <string.h>
 #include "linkedlist.h"
 
+/**
+ * @returns the subclass that the *needle is a member of the
+ * superset **haystack.
+ * @params
+ *   *needle    : char = the string to classify
+ *   **haystack : char = the superset representing the class
+ */
 char
 *subclass_of(char *needle, char **haystack)
 {
@@ -27,6 +34,13 @@ char
 	return NULL;
 } /* end *subclass_of(char*, char**) */
 
+/**
+ * @returns true if the *needle is a member of the superclass
+ * **haystack.
+ * @params
+ *   *needle    : char = the string to classify
+ *   **haystack : char = the superset representing the class
+ */
 bool
 in_class(char *needle, char **haystack)
 {
@@ -35,6 +49,13 @@ in_class(char *needle, char **haystack)
 	return (NULL != subclass_of(needle, haystack));
 } /* end in_class(char*, char**) */
 
+/**
+ * Enqueues the string between *offset inclusive and *end exclusive.
+ * @params
+ *   *queue  : Queue = the queue whereto, to add
+ *   *offset : char  = the beginning of the subtring (inclusive)
+ *   *end    : char  = the end of the substring (exclusive)
+ */
 void
 push_next_token(Queue *queue, char *offset, char *end)
 {
@@ -51,41 +72,64 @@ push_next_token(Queue *queue, char *offset, char *end)
 	strncpy(new_token, offset, len);
 	/* enqueue the new token */
 	queue_enqueue(queue, node_new(new_token));
-}
+} /* end push_next_token(Queue*, char*, char*) */
 
-void
+/**
+ * Parses the string *haystack and stores the number of tokens in *argc
+ * and the tokens themselves in ***argv.
+ * @params
+ *   *haystack : char = the string to search
+ *   *argc     : int  = pointer to the argument count
+ *   ***argv   : char = pointer to the argument values
+ */
+int
 parse(char *haystack, int *argc, char ***argv)
 {
 	/* queue to store the unknown number of arguments temporarily */
 	Queue *nargv = queue_new();
 
-	/* the escape prefix class */
-	char *escape[] = { "\\", NULL };
 	/* the quotation delimiter class */
+	/* substrings in quotation delimiters are treated as single */
+	/* characters */
 	char *delims[] = { "\"", "'", NULL };
 	/* the comment prefix class */
+	/* these characters make the end of a line */
 	char *comment[] = { "#", NULL };
+	/* the white space separator class */
+	/* these strings split tokens up */
 	char *separators[] = { " ", "\t", "\r", "\n", NULL };
+	/* the self token class */
+	/* these strings are tokens onto themselves */
+	char *tokens[] = { "<", "|", ">>", ">", "&", NULL };
 
 	/* subclass of the delimiters that the current haystack is in */
 	char *delim_subclass;
 	/* whether the state is in the separator class */
 	bool in_separator = false;
+	/* subclass of tokens that the current haystack is in */
+	char *token_subclass;
 
 	/* for creating new tokens */
 	char *offset = haystack;	/* offset within haystack */
 
 	/* loop until end of haystack */
 	while (*haystack) {
+		/* state: in regular (non-separator) text */
 		if (!in_separator) {
-			/* if the current character is in the */
+			/* if the current string is in the */
 			/* delimiter class */
 			delim_subclass = subclass_of(haystack, delims);
 			if (NULL != delim_subclass) {
 				/* seek past the next instance */
 				/* of the delimiter */
 				haystack = strstr(haystack + 1,
-					delim_subclass) + 1;
+					delim_subclass);
+				/* if the next instance is not found*/
+				if (NULL == haystack) {
+					fprintf(stderr, "Unmatched %s.\n", delim_subclass);
+					return EXIT_FAILURE;
+				};
+				++haystack;
 				continue;
 			} /* end if (NULL != delim_subclass) */
 
@@ -94,38 +138,70 @@ parse(char *haystack, int *argc, char ***argv)
 				break;
 			} /* end if (in_class(haystack, comment)) */
 
+			/* if the current string is in the */
+			/* separator class  */
 			if (in_class(haystack, separators)) {
-				push_next_token(nargv,
-					offset, haystack);
+				/* push the string so far into the stack */
+				push_next_token(nargv, offset, haystack);
+				/* update the state */
 				in_separator = true;
-			}
+			} /* end if (in_class(haystack, separators)) */
 
-			++haystack;
-		}
+			/* if the current string is in the */
+			/* token class */
+			token_subclass = subclass_of(haystack, tokens);
+			if (NULL != token_subclass) {
+				/* push the string so far onto stack */
+				push_next_token(nargv, offset, haystack);
+				/* push the token too */
+				queue_enqueue(nargv, node_new(token_subclass));
+				/* seek after the token */
+				haystack += strlen(token_subclass);
+				/* update the offset */
+				offset = haystack;
+				/* stay on the new character */
+				continue;
+			} /* end if (NULL != token_subclass) */
+		} /* end if (!in_separator) */
+		/* state: in the separator class */
 		else {
+			/* if the current string is STILL in the */
+			/* separator class */
 			if (in_class(haystack, separators)) {
 				++haystack;
-			}
+			} /* end if (in_class(haystack, separators)) */
+			/* otherwise */
 			else {
-				offset = haystack;
+				/* exit the in_separator state */
 				in_separator = false;
-			}
-		} /* end switch ((int)in_separator) */
+				/* update the offset */
+				offset = haystack;
+				/* stay on same character */
+				continue;
+			} /* end if (!in_class(haystack, separators)) */
+		} /* end if (in_separator) */
+
+		/* priority logic: continue to next character */
+		++haystack;
 	} /* end while (*haystack) */
 
+	/* push the last token onto the stack */
 	push_next_token(nargv, offset, haystack);
 
 	/* set argc and argv */
 	*argc = (int)queue_length(nargv);
 	/* argv is an array copy of nargv */
 	queue_to_array(nargv, (void***)argv, sizeof(char*));
+
+	return EXIT_SUCCESS;
 } /* end parse(char *haystack, int *argc, char ***argv) */
 
 void
 main(int argc, char** argv)
 {
-	int k;
+	int k;	/* the argument printer counter */
 
+	/* the test strings to parse */
 	char *haystacks[] = {
 		"hello, world! #how are you?",
 		"hello, world!#how are you?",
@@ -135,18 +211,28 @@ main(int argc, char** argv)
 		"hello \"world, #how are you?\"",
 		"hello \\'world, #how are you?\\'",
 		"hello \\\"world, #how are you?\\\"",
+		"hello > world!",
+		"hello >> world!",
+		"hello < world!",
+		"hello | world!",
+		"hello & world",
 		NULL
-	};
+	}; /* end char *haystacks[] */
+
 	char **phaystack;	/* pointer to haystacks */
 	int pargc;	/* parsed argc */
 	char **pargv;	/* parsed argv */
 
+	/* for each of the haystacks strings */
 	for (phaystack = haystacks; *phaystack; ++phaystack) {
+		/* parse the string */
 		parse(*phaystack, &pargc, &pargv);
+		/* print the argument and original string */
 		printf("%d:\"%s\"\n", pargc, *phaystack);
-		for (k = 0; k < pargc; ++k) {
+		/* print each argument */
+		for (k = 0; (k < pargc); ++k) {
 			printf("\t\"%s\"\n", pargv[k]);
-		}
-	}
+		} /* for (; (k < pargc); ) */
+	} /* for (; *phaystack; ) */
 }
 
