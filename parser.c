@@ -73,18 +73,18 @@ push_next_token(Queue *queue, char *offset, char *end)
 } /* end push_next_token(Queue*, char*, char*) */
 
 /**
- * Parses the string *haystack and stores the number of tokens in *argc
- * and the tokens themselves in ***argv.
+ * Parses the string *haystack and stores the number of tokens in
+ * *pargc and the tokens themselves in ***pargv.
  * @params
  *   *haystack : char = the string to search
- *   *argc     : int  = pointer to the argument count
- *   ***argv   : char = pointer to the argument values
+ *   *pargc    : int  = pointer to the argument count
+ *   ***pargv  : char = pointer to the argument values
  */
 int
-parse(char *haystack, int *argc, char ***argv)
+parse(char *haystack, int *pargc, char ***pargv)
 {
 	/* queue to store the unknown number of arguments temporarily */
-	Queue *nargv = queue_new();
+	Queue *qargv = queue_new();
 
 	/* the quotation delimiter class */
 	/* substrings in quotation delimiters are treated as single */
@@ -140,7 +140,7 @@ parse(char *haystack, int *argc, char ***argv)
 			/* separator class  */
 			if (in_class(haystack, separators)) {
 				/* push the string so far into the stack */
-				push_next_token(nargv, offset, haystack);
+				push_next_token(qargv, offset, haystack);
 				/* update the state */
 				in_separator = true;
 			} /* end if (in_class(haystack, separators)) */
@@ -150,9 +150,9 @@ parse(char *haystack, int *argc, char ***argv)
 			token_subclass = subclass_of(haystack, tokens);
 			if (NULL != token_subclass) {
 				/* push the string so far onto stack */
-				push_next_token(nargv, offset, haystack);
+				push_next_token(qargv, offset, haystack);
 				/* push the token too */
-				queue_enqueue(nargv, node_new(token_subclass));
+				queue_enqueue(qargv, node_new(token_subclass));
 				/* seek after the token */
 				haystack += strlen(token_subclass);
 				/* update the offset */
@@ -184,13 +184,13 @@ parse(char *haystack, int *argc, char ***argv)
 	} /* end while (*haystack) */
 
 	/* push the last token onto the stack */
-	push_next_token(nargv, offset, haystack);
+	push_next_token(qargv, offset, haystack);
 
-	/* set argc and argv */
-	*argc = (int)queue_length(nargv);
-	/* argv is an array copy of nargv */
-	queue_to_array(nargv, (void***)argv, sizeof(char*));
+	/* set pargc and pargv */
+	*pargc = (int)queue_length(qargv);
+	/* pargv is an array copy of qargv */
+	queue_to_array(qargv, (void***)pargv, sizeof(char*));
 
 	return EXIT_SUCCESS;
-} /* end parse(char *haystack, int *argc, char ***argv) */
+} /* end parse(char *haystack, int *pargc, char ***pargv) */
 

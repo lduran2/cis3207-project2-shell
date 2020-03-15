@@ -37,12 +37,12 @@ bool in_class(char *needle, char **haystack);
 void push_next_token(Queue *queue, char *offset, char *end);
 
 /**
- * Parses the string *haystack and stores the number of tokens in *argc
- * and the tokens themselves in ***argv.
+ * Parses the string *haystack and stores the number of tokens in
+ * *pargc and the tokens themselves in ***pargv.
  * @params
  *   *haystack : char = the string to search
- *   *argc     : int  = pointer to the argument count
- *   ***argv   : char = pointer to the argument values
+ *   *pargc    : int  = pointer to the argument count
+ *   ***pargv  : char = pointer to the argument values
  */
-int parse(char *haystack, int *argc, char ***argv);
+int parse(char *haystack, int *pargc, char ***pargv);
 

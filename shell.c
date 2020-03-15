@@ -5,10 +5,7 @@
  * Author : Leomar Duran <https://github.com/lduran2>
  * For    : CIS 3207, Spring 2020
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
+#include "parser.h"
 
 /**
  * Wraps the getline method by giving the user a prompt first.
@@ -19,32 +16,45 @@
  *   *instream : FILE    = the input stream 
  */
 bool
-promptline(char* prompt, char **lineptr, size_t *n, FILE *instream)
+promptline(char* prompt, int *pargc, char ***pargv, FILE *instream)
 {
+	char *line = NULL;	/* line read in */
+	size_t n = 0;	/* line length */
+
+	/* prompt and read line */
 	fprintf(stderr, "%s", prompt);	/* write the prompt */
-	size_t out = getline(lineptr, n, stdin);	/* accept a new line */
+	size_t out = getline(&line, &n, stdin);	/* accept a new line */
+	/* Ctrl+D: shortcut for exit */
+	if (*line == '\0') { /* the user pressed Ctrl+D */
+		printf("exit\n");
+		return false;
+
+	} /* if (*line == '\0') */
+
+	/* get the length */
+	n = strlen(line);
+	/* parse the line */
+	parse(line, pargc, pargv);
+
 	/* continue conditions */
 	return (
-		(*lineptr[0] != '\0')	/* user did not press Ctrl+D */
-		/* user did not type exit */
-		&& (0 != strcmp(*lineptr, "exit\n"))
-		/* user did not type quit */
-		&& (0 != strcmp(*lineptr, "quit\n"))
+		/* user did typed the exit command */
+		(0 != strcmp(**pargv, "exit"))
+		/* user did typed the quit command */
+		&& (0 != strcmp(**pargv, "quit"))
 	);
 } /* end promptline(char*, char**, size_t*, FILE*) */
 
-void
-main(int argc, char **argv)
+int
+main(int margc, char **margv)
 {
 	/* let getline allocate the line buffer */
-	char *line = NULL;	/* line read in */
-	size_t line_len = 0;	/* line length */
+	char **argv;	/* argument values */
+	int argc;	/* argument count */
 	FILE* in = stdin;	/* input stream */
 
 	/* while prompting the user */
-	while (promptline("$ ", &line, &line_len, in)) {
-		/* echo input */
-		printf("%lu\n", line_len);
+	while (promptline("$ ", &argc, &argv, in)) {
 	} /* while (promptline) */
 } /* end main(int, char**) */
 
