@@ -1,35 +1,43 @@
+COMPILE = gcc -g
 TESTOUTPUTS = test-*.o test-*.out
 ALLOUTPUTS = *.o shell.out $(TESTOUTPUTS)
 
 default: shell
 
-shell: shell.o parser.o linkedlist.o
-	gcc $^ -o $@.out
+shell: shell.o parser.o linkedlist.o locator.o
+	$(COMPILE) $^ -o $@.out
 
 test-parser: test-parser.o parser.o linkedlist.o
-	gcc $^ -o $@.out
+	$(COMPILE) $^ -o $@.out
 
 test-linkedlist: test-linkedlist.o linkedlist.o
-	gcc $^ -o $@.out
+	$(COMPILE) $^ -o $@.out
 
 shell.o: shell.c
-	gcc -c $^
+	$(COMPILE) -c $^
 
 test-parser.o: test-parser.c
-	gcc -c $^
+	$(COMPILE) -c $^
 
 test-linkedlist.o: test-linkedlist.c
-	gcc -c $^
+	$(COMPILE) -c $^
 
 parser.o: parser.c parser.h
-	gcc -c $<
+	$(COMPILE) -c $<
 
 linkedlist.o: linkedlist.c linkedlist.h
-	gcc -c $<
+	$(COMPILE) -c $<
+
+locator.o: locator.c locator.h
+	$(COMPILE) -c $<
 
 clean:
 	-rm -f $(ALLOUTPUTS)
 
 clean-tests:
 	-rm -f $(TESTOUTPUTS)
+
+clean-build:
+	make clean
+	make
 

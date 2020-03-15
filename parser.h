@@ -9,6 +9,9 @@
 #include <string.h>
 #include "linkedlist.h"
 
+#ifndef LDURAN2_SHELL_PARSER_H
+#define LDURAN2_SHELL_PARSER_H
+
 /**
  * @returns the subclass that the *needle is a member of the
  * superset **haystack.
@@ -43,6 +46,9 @@ void push_next_token(Queue *queue, char *offset, char *end);
  *   *haystack : char = the string to search
  *   *pargc    : int  = pointer to the argument count
  *   ***pargv  : char = pointer to the argument values
+ * @return true on success, false on failure.
  */
-int parse(char *haystack, int *pargc, char ***pargv);
+bool parse(char *haystack, int *pargc, char ***pargv);
+
+#endif
 

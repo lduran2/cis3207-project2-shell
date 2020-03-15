@@ -80,8 +80,9 @@ push_next_token(Queue *queue, char *offset, char *end)
  *   *pargc    : int  = pointer to the argument count
  *   ***pargv  : char = pointer to the argument values
  *                      (NULL terminated)
+ * @returns true on success, false on failure.
  */
-int
+bool
 parse(char *haystack, int *pargc, char ***pargv)
 {
 	/* queue to store the unknown number of arguments temporarily */
@@ -125,8 +126,10 @@ parse(char *haystack, int *pargc, char ***pargv)
 					delim_subclass);
 				/* if the next instance is not found*/
 				if (NULL == haystack) {
+					/* print an error */
 					fprintf(stderr, "Unmatched %s.\n", delim_subclass);
-					return EXIT_FAILURE;
+					/* return failure */
+					return false;
 				};
 				++haystack;
 				continue;
@@ -192,6 +195,7 @@ parse(char *haystack, int *pargc, char ***pargv)
 	/* pargv is an array copy of qargv */
 	queue_to_array(qargv, (void***)pargv, sizeof(char*));
 
-	return EXIT_SUCCESS;
+	/* return success */
+	return true;
 } /* end parse(char *haystack, int *pargc, char ***pargv) */
 
