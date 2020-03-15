@@ -75,9 +75,15 @@ bool queue_is_empty(Queue *queue);
 bool queue_has_next(Queue *queue);
 
 /**
- * Creates an array copy of the queue and stores it in ***array.
+ * Creates an array copy (NULL terminated) of the queue and stores it
+ * in ***parray.
+ * @params
+ *   *queue    : Queue  = the queue to copy
+ *   ***parray : void   = pointer to the destination array
+ *                        (NULL terminated)
+ *   data_size : size_t = size of the data type in the queue
  */
-void queue_to_array(Queue *queue, void ***array, size_t data_size);
+void queue_to_array(Queue *queue, void ***parray, size_t data_size);
 
 #endif
 

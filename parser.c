@@ -79,6 +79,7 @@ push_next_token(Queue *queue, char *offset, char *end)
  *   *haystack : char = the string to search
  *   *pargc    : int  = pointer to the argument count
  *   ***pargv  : char = pointer to the argument values
+ *                      (NULL terminated)
  */
 int
 parse(char *haystack, int *pargc, char ***pargv)

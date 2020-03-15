@@ -92,19 +92,30 @@ queue_has_next(Queue *queue)
 } /* end queue_has_next(Queue*) */
 
 /**
- * Creates an array copy of the queue and stores it in ***array.
+ * Creates an array copy (NULL terminated) of the queue and stores it
+ * in ***parray.
+ * @params
+ *   *queue    : Queue  = the queue to copy
+ *   ***parray : void   = pointer to the destination array
+ *                        (NULL terminated)
+ *   data_size : size_t = size of the data type in the queue
  */
 void
-queue_to_array(Queue *queue, void ***array, size_t data_size)
+queue_to_array(Queue *queue, void ***parray, size_t data_size)
 {
-	Node *node = queue->phead;
-	void **local_array = malloc(queue->length * data_size);
-	int k;
+	/* start at the pointer to the head */
+	Node *node = queue->phead;	/* current element */
+	/* create the array */
+	void **local_array = malloc((queue->length + 1) * data_size);
+	int k;	/* number of elements iterated so far */
 
+	/* loop through the elements in the queue while counting */
 	for (k = 0; node = node->next; ++k) {
+		/* store the current element data in the array */
 		local_array[k] = node->data;
-	}
+	} /* end for (; node-> next; ) */
 
-	*array = local_array;
+	/* store in the pointer to the array */
+	*parray = local_array;
 } /* end queue_to_array(Queue*, void***, size_t) */
 
