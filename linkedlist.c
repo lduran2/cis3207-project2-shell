@@ -115,6 +115,9 @@ queue_to_array(Queue *queue, void ***parray, size_t data_size)
 		local_array[k] = node->data;
 	} /* end for (; node-> next; ) */
 
+	/* NULL terminate the array, k is now the queue length */
+	local_array[k] = NULL;
+
 	/* store in the pointer to the array */
 	*parray = local_array;
 } /* end queue_to_array(Queue*, void***, size_t) */
