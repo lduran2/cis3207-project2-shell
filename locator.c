@@ -10,25 +10,42 @@
 /** environmental variables */
 extern char **environ;
 
-char *find_env(char *env) {
-	size_t length = (strlen(env) + 1);
-	char *value = malloc(length * sizeof(char));
-	strcpy(value, env);
-	strcat(value, "=");
+/**
+ * @returns the value of an environment variable given its name.
+ */
+char *find_env(char *env)
+{
+	char *key;	/* key to search for */
+	size_t length;	/* length of the key */
+	char **local_env	/* current environment statement */
 
-	char **local_env = environ;
-	for (; *local_env; ++local_env) {
+	/* append the '=' to the env variable name for the key */
+	length = (strlen(env) + 1);
+	key = malloc(length * sizeof(char));
+	strcpy(key, env);
+	strcat(key, "=");
+
+	/* search for the environment value */
+	/* for each environment statement: */
+	for (**local_env = environ; *local_env; ++local_env) {
+		/* check if it begins with the key */
 		if (0 == strncmp(*local_env, value, length)) {
+			/* if so, return the part after the '=' */
 			return *local_env + length;
-		}
-	}
+		} /* end if (0 == strncmp(*local_env, value, length)) */
+	} /* end for (; *local_env; ) */
+	/* otherwise, return NULL */
 	return NULL;
-}
+} /* end find_env(char*) */
 
+/**
+ * Executability types.
+ */
 typedef enum {
-	EXECUTABLE,
-	PERMISSION_DENIED,
-	COMMAND_NOT_FOUND
+	EXECUTABLE,	/* a file is executable */
+	PERMISSION_DENIED,	/* a file exists, but is not regular or */
+		/* cannot be executed */
+	COMMAND_NOT_FOUND /* the file cannot be found */
 } Executability;
 
 /**
@@ -38,7 +55,8 @@ typedef enum {
  * @returns whether the given file is executable, or if not, then the
  * resulting error.
  */
-Executability is_executable(char *file) {
+Executability is_executable(char *file)
+{
 	int result;	/* result of accessing relative */
 	struct stat statbuf;	/* statistics of relative path */
 	bool isreg;	/* whether relative is a regular file */
@@ -68,13 +86,41 @@ Executability is_executable(char *file) {
 } /* end is_executable(char*) */
 
 /**
+ * Contextualize a relative path.
+ * @param
+ *   *context  : char = the absolute path context
+ *   *relative : char = the relative file path
+ * @returns the contextualized absolute path.
+ */
+char *contextualize(char *context, char *relative)
+{
+	char *absolute;	/* the result */
+	int length;	/* the length of the result */
+	/* calculate the combined length */
+	length = (strlen(context) + strlen(relative) + 1);
+	/* allocate a string of that length */
+	absolute = malloc((length)*sizeof(char));
+	/* copy the context */
+	strcpy(absolute, context);
+	/* concatenate the "/" */
+	strcat(absolute, "/");
+	/* concatenate the relative */
+	strcat(absolute, relative);
+	/* return the result */
+	return absolute;
+} /* end *contextualize(char*, char*) */
+
+/**
  * Locate the *relative path and store it in **location.
  * @params
  *   *relative  : char = the relative path
  *   **location : char = the resulting location
  * @returns true on success, false on failure
  */
-bool locate(char *relative, char **location) {
+bool locate(char *relative, char **location)
+{
+	/* static variables */
+
 	/* error message formats based on executability */
 	static char *executability_formats[] = {
 		"%s: To be executable.\n",
@@ -94,15 +140,27 @@ bool locate(char *relative, char **location) {
 	};
 	static size_t direct_path_lens[3];	/* length of each */
 
-
 	static const char *HOME = "~/";	/* unexpanded home path */
 	static size_t home_len;	/* length of home path */
 
 	int k;	/* index (for direct paths) */
 
+	/* for home paths */
 	char *home_expand;	/* expansion of home path */
 	char *local_location;	/* local copy of location */
 	int length;	/* length of location */
+
+	/* for paths that use $PATH */
+	char *paths = find_env("PATH");	/* values of $PATH */
+	char *curr_path;	/* current value in $PATH */
+	char *next_path;	/* next value in $PATH */
+	int path_len;	/* length of the current path */
+	/* best executability so far */
+	Executability best_executability = 4;
+	Executability result;	/* current executability */
+	/* path corresponding to best executability */
+	char *best_path = NULL;
+	char *absolute;	/* path corresponding to current executability */
 
 	/* intialize lengths once */
 	if (!initialized) {
@@ -124,7 +182,7 @@ bool locate(char *relative, char **location) {
 			direct_paths[k], direct_path_lens[k]))
 		{
 			/* check its executability */
-			Executability result = is_executable(relative);
+			result = is_executable(relative);
 			switch (result) {
 				/* if executable */
 				case (EXECUTABLE):
@@ -153,37 +211,55 @@ bool locate(char *relative, char **location) {
 	/* check if "~/" */
 	if (0 == strncmp(relative, HOME, home_len)) {
 		/* shift relative to remove home path */
-		relative += (home_len - 1);
+		relative += home_len;
 		home_expand = find_env("HOME");	/* lookup HOME */
-		/* calculate the combined length */
-		length = (strlen(home_expand) + strlen(relative));
-		/* allocate a string of that length */
-		local_location = malloc((length)*sizeof(char));
-		/* copy the home expansion */
-		strcpy(local_location, home_expand);
-		/* concatenate the shifted relative */
-		strcat(local_location, relative);
+		/* contextualize the shifted relative */
+		/* to the home expansion */
+		local_location = contextualize(home_expand, relative);
 		/* locate the result and return */
 		return locate(local_location, location);
 	} /* end if (0 == strncmp(relative, HOME, home_len)) */
-	
 
-	char *paths = find_env("PATH");
-	char *curr_path;
-	char *next_path;
-	int path_len;
-	Executability best_executability = 4;
-	char* best_path = NULL;
-	
-	Executability result;
-
-	for (; paths; paths = next_path) {
+	/* for each of the $PATH */
+	for (*paths = find_env("PATH"); paths; paths = next_path) {
+		/* look ahead to the next path */
 		next_path = strstr(paths, ":");
+		/* if these is a next path: */
+		if (next_path) {
+			/* calculate the path length */
+			path_len = (next_path - paths);
+			/* allocate the path */
+			curr_path = malloc(path_len*sizeof(char));
+			/* truncate the path */
+			strncpy(curr_path, paths, path_len);
+		} /* end if (next_path) */
+		else {
+			/* otherwise, use the last path */
+			curr_path = paths;
+		} /* end if (!next_path) */
+
+		/* contextualize with this path */
+		absolute = contextualize(curr_path, relative);
+		/* check if the absolute path is executable */
+		result = is_executable(absolute);
+
+		/* check if better than best executability */
+		if (result <= best_executability) {
+			/* update if so */
+			best_executability = result;
+			best_path = absolute;
+		} /* end if (result <= best_executability) */
+		/* stop if found an executable path */
+		if (EXECUTABLE == best_executability) {
+			break;
+		} /* end if (EXECUTABLE = best_executability) */
+		/* stop if no next path */
 		if (!next_path) break;
+		/* skip next ':' delimiter */
 		++next_path;
-		path_len = (next_path - paths - 1);
-		curr_path = malloc(path_len*sizeof(char));
-		strncpy(curr_path, paths, path_len);
-	}
+	} /* end for (; paths; ) */
+
+	/* locate the best path */
+	return locate(best_path, location);
 } /* end locate(char*, char**) */
 
