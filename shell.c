@@ -85,21 +85,15 @@ main(int margc, char **margv)
 		/* skip to next prompt */
 		if (!execute) continue;
 
-		printf("%s\t%d\n", absolute_path, argc);
-		for (char **parg = argv; *parg; ++parg) {
-			printf("\t%p:%s:\n", parg, *parg);
-		}
-		continue;
-
 		/* fork: */
-		if (fork() == 0) { /* child */
-			execvp(absolute_path, argv);
-		}
-		else { /* parent */
+		if (fork()) { /* parent */
 			status = 0;
 			wait(&status);
 			printf("Child exited with status of %d.\n", status);
-		}
+		} /* end if (fork()) */
+		else { /* child */
+			execvp(absolute_path, argv);
+		} /* end if (!fork()) */
 	} /* while (promptline) */
 } /* end main(int, char**) */
 
