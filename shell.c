@@ -7,6 +7,7 @@
  */
 #include "parser.h"
 #include "locator.h"
+#include <sys/wait.h>
 
 /**
  * Wraps the getline method by giving the user a prompt first.
@@ -25,21 +26,28 @@ promptline(
 	FILE *instream)
 {
 	char *line = NULL;	/* line read in */
+	char *raw_line = NULL;	/* line read in, raw from getline */
 	size_t n = 0;	/* line length */
 
 	/* prompt and read line */
 	fprintf(stderr, "%s", prompt);	/* write the prompt */
-	size_t out = getline(&line, &n, stdin);	/* accept a new line */
+	/* accept a new raw line */
+	size_t out = getline(&raw_line, &n, stdin);
 
+	/* get the length removing the line feed '\n' */
+	n = (strlen(raw_line) - 1);
 	/* Ctrl+D: shortcut for exit */
-	if (*line == '\0') { /* the user pressed Ctrl+D */
+	if (0 == n) { /* the user pressed Ctrl+D */
 		*success = true;	/* report success */
 		printf("exit\n");	/* show exit */
 		return false;	/* and exit */
-	} /* if (*line == '\0') */
+	} /* if (0 == n) */
 
-	/* get the length */
-	n = strlen(line);
+	/* properly terminate the line */
+	line = malloc((n + 1) * sizeof(char));
+	strncpy(line, raw_line, n);
+	strcat(line, "\0");
+
 	/* parse the line, but on error: */
 	*success = parse(line, pargc, pargv); /* report if success */
 	if (!*success) {
@@ -65,14 +73,32 @@ main(int margc, char **margv)
 	char *absolute_path;	/* absolute path of command */
 	bool execute;	/* whether command is executable */
 
+	int status;	/* child exit status */
+
 	/* while prompting the user */
 	while (promptline("$ ", &argc, &argv, &success, in)) {
 		/* if not successful parsing, just skip to next prompt */
 		if (!success) continue;
-		/* execute along */
+		/* test executability */
 		execute = locate(*argv, &absolute_path);
-		if (execute) {
-			printf("%s\n", absolute_path);
+		/* if the absolute path is not executable, */ 
+		/* skip to next prompt */
+		if (!execute) continue;
+
+		printf("%s\t%d\n", absolute_path, argc);
+		for (char **parg = argv; *parg; ++parg) {
+			printf("\t%p:%s:\n", parg, *parg);
+		}
+		continue;
+
+		/* fork: */
+		if (fork() == 0) { /* child */
+			execvp(absolute_path, argv);
+		}
+		else { /* parent */
+			status = 0;
+			wait(&status);
+			printf("Child exited with status of %d.\n", status);
 		}
 	} /* while (promptline) */
 } /* end main(int, char**) */

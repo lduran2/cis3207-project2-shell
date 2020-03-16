@@ -17,7 +17,7 @@ char *find_env(char *env)
 {
 	char *key;	/* key to search for */
 	size_t length;	/* length of the key */
-	char **local_env	/* current environment statement */
+	char **local_env;	/* current environment statement */
 
 	/* append the '=' to the env variable name for the key */
 	length = (strlen(env) + 1);
@@ -27,9 +27,9 @@ char *find_env(char *env)
 
 	/* search for the environment value */
 	/* for each environment statement: */
-	for (**local_env = environ; *local_env; ++local_env) {
+	for (local_env = environ; *local_env; ++local_env) {
 		/* check if it begins with the key */
-		if (0 == strncmp(*local_env, value, length)) {
+		if (0 == strncmp(*local_env, key, length)) {
 			/* if so, return the part after the '=' */
 			return *local_env + length;
 		} /* end if (0 == strncmp(*local_env, value, length)) */
@@ -210,9 +210,14 @@ bool locate(char *relative, char **location)
 
 	/* check if "~/" */
 	if (0 == strncmp(relative, HOME, home_len)) {
+		home_expand = find_env("HOME");	/* lookup HOME */
+		/* if the $HOME is not found, print an error and fail */
+		if (!home_expand) {
+			fprintf(stderr, "HOME: Undefined variable.\n");
+			return false;
+		} /* end if (!home_expand) */
 		/* shift relative to remove home path */
 		relative += home_len;
-		home_expand = find_env("HOME");	/* lookup HOME */
 		/* contextualize the shifted relative */
 		/* to the home expansion */
 		local_location = contextualize(home_expand, relative);
@@ -220,8 +225,15 @@ bool locate(char *relative, char **location)
 		return locate(local_location, location);
 	} /* end if (0 == strncmp(relative, HOME, home_len)) */
 
+	/* find the $PATH value */
+	paths = find_env("PATH");
+	/* if the $PATH is not found, print an error and fail */
+	if (!paths) {
+		fprintf(stderr, "PATH: Undefined variable.\n");
+		return false;
+	} /* end if (!paths) */
 	/* for each of the $PATH */
-	for (*paths = find_env("PATH"); paths; paths = next_path) {
+	for (; paths; paths = next_path) {
 		/* look ahead to the next path */
 		next_path = strstr(paths, ":");
 		/* if these is a next path: */
