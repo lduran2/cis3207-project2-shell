@@ -46,5 +46,5 @@ main(int argc, char** argv)
 			printf("\t\"%s\"\n", pargv[k]);
 		} /* for (; (k < pargc); ) */
 	} /* for (; *phaystack; ) */
-} /* end main(int, char*) */
+} /* end main(int, char**) */
 

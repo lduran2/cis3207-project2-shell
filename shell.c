@@ -7,6 +7,7 @@
  */
 #include "parser.h"
 #include "locator.h"
+#include "linkedlist.h"
 #include <sys/wait.h>
 
 /**
@@ -31,8 +32,9 @@ promptline(
 
 	/* prompt and read line */
 	fprintf(stderr, "%s", prompt);	/* write the prompt */
+	fflush(stderr); /* flush the stderr buffer */
 	/* accept a new raw line */
-	size_t out = getline(&raw_line, &n, stdin);
+	getline(&raw_line, &n, stdin);
 
 	/* get the length removing the line feed '\n' */
 	n = (strlen(raw_line) - 1);
@@ -68,6 +70,9 @@ main(int margc, char **margv)
 {
 	char **argv;	/* argument values */
 	int argc;	/* argument count */
+	Queue *processes;	/* queue of redirection processes */
+	Queue *q_process;	/* the process as a queue of arguments */
+	char **process;	/* the process as an array of arguments */
 	bool success;	/* whether parsing was successful */
 	FILE* in = stdin;	/* input stream */
 	char *absolute_path;	/* absolute path of command */
@@ -79,21 +84,51 @@ main(int margc, char **margv)
 	while (promptline("$ ", &argc, &argv, &success, in)) {
 		/* if not successful parsing, just skip to next prompt */
 		if (!success) continue;
-		/* test executability */
-		execute = locate(*argv, &absolute_path);
-		/* if the absolute path is not executable, */ 
-		/* skip to next prompt */
-		if (!execute) continue;
 
-		/* fork: */
-		if (fork()) { /* parent */
-			status = 0;
-			wait(&status);
-			printf("Child exited with status of %d.\n", status);
-		} /* end if (fork()) */
-		else { /* child */
-			execvp(absolute_path, argv);
-		} /* end if (!fork()) */
+		/* split the arguments into processes */
+		processes = process_splitter(argv);
+
+		while (queue_has_next(processes))
+		{
+			/* get the next process */
+			q_process = queue_dequeue(processes)->data;
+			/* remove first element */
+			queue_dequeue(q_process);
+			/* convert to a array */
+			queue_to_array(q_process, (void***)&process, sizeof(char));
+
+			/* check if process has argv[0] */
+			if (!*process) continue;	/* if not, skip */
+
+			/* test executability */
+			execute = locate(*process, &absolute_path);
+			/* if the absolute path is not executable, */ 
+			/* skip to next prompt */
+			if (!execute) continue;
+
+			/* fork: */
+			if (fork()) { /* parent */
+				status = 0;
+				if (queue_has_next(processes)
+					&& (0 == strcmp(queue_peek_first(queue_peek_first(processes)->data)->data, "&"))
+				)
+				{
+					printf("Child %s running in the background.\n",
+						*process
+					);
+				}
+				else {
+					wait(&status);
+					printf("Child %s exited with status of %d.\n",
+						*process, status
+					);
+				}
+			} /* end if (fork()) */
+			else { /* child */
+				execvp(absolute_path, process);
+			} /* end if (!fork()) */
+		}
+		
 	} /* while (promptline) */
 } /* end main(int, char**) */
 

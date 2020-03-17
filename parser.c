@@ -199,3 +199,43 @@ parse(char *haystack, int *pargc, char ***pargv)
 	return true;
 } /* end parse(char *haystack, int *pargc, char ***pargv) */
 
+/**
+ * Splits an argument list by the redirection tokens.  Each new element
+ * starts with a redirection token, except the first which starts with
+ * an empty string.
+ * @params
+ *   **argv : char = the argument list
+ * @returns the queue of redirection processes.
+ */
+Queue
+*process_splitter(char **argv) {
+	/* the redirection tokens */
+	char *tokens[] = { "<", "|", ">>", ">", "&", NULL };
+
+	char **curr;	/* the current argument */
+
+	/* arrays were not playing nice here, so I went with queues */
+	/* also, access will be sequential either way */
+	Queue *processes = queue_new();	/* all processes */
+	Queue *process = queue_new();	/* each process */
+	/* arguments will always start at 1 */
+	queue_enqueue(process, node_new(""));
+
+	/* for each argument */
+	for (curr = argv; *curr; ++curr) {
+		/* if the argument is a redirection token: */
+		if (in_class(*curr, tokens)) {
+			/* enqueue the process */
+			queue_enqueue(processes, node_new(process));
+			/* start a new one */
+			process = queue_new();
+		} /* end if (in_class(*curr, tokens)) */
+		queue_enqueue(process, node_new(*curr));
+	} /* end for (curr = argv; *curr; ++curr) */
+	/* enqueue the final process */
+	queue_enqueue(processes, node_new(process));
+
+	return processes;
+
+} /* end *process_splitter(char**) */
+

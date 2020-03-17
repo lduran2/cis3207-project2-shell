@@ -74,6 +74,17 @@ Node
 } /* end *queue_dequeue(Queue*) */
 
 /**
+ * @returns the element at the head of the queue.
+ * @params
+ *   *queue : Queue = the queue wherefrom to peek
+ */
+Node
+*queue_peek_first(Queue *queue)
+{
+	return queue->phead->next;
+} /* end *queue_peek_first(Queue*) */
+
+/**
  * @returns if the given queue is empty.
  */
 bool

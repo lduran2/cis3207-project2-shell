@@ -50,5 +50,15 @@ void push_next_token(Queue *queue, char *offset, char *end);
  */
 bool parse(char *haystack, int *pargc, char ***pargv);
 
+/**
+ * Splits an argument list by the redirection tokens.  Each new element
+ * starts with a redirection token, except the first which starts with
+ * an empty string.
+ * @params
+ *   **argv : char = the argument list
+ * @returns the queue of redirection processes.
+ */
+Queue *process_splitter(char **argv);
+
 #endif
 

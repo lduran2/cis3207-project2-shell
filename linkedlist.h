@@ -65,6 +65,13 @@ void queue_enqueue(Queue *queue, Node *new_element);
 Node *queue_dequeue(Queue *queue);
 
 /**
+ * @returns the element at the head of the queue.
+ * @params
+ *   *queue : Queue = the queue wherefrom to peek
+ */
+Node *queue_peek_first(Queue *queue);
+
+/**
  * @returns if the given queue is empty.
  */
 bool queue_is_empty(Queue *queue);

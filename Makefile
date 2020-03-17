@@ -10,6 +10,9 @@ shell: shell.o parser.o linkedlist.o locator.o
 test-parser: test-parser.o parser.o linkedlist.o
 	$(COMPILE) $^ -o $@.out
 
+test-splitter: test-splitter.o parser.o linkedlist.o
+	$(COMPILE) $^ -o $@.out
+
 test-linkedlist: test-linkedlist.o linkedlist.o
 	$(COMPILE) $^ -o $@.out
 
@@ -17,6 +20,9 @@ shell.o: shell.c
 	$(COMPILE) -c $^
 
 test-parser.o: test-parser.c
+	$(COMPILE) -c $^
+
+test-splitter.o: test-splitter.c
 	$(COMPILE) -c $^
 
 test-linkedlist.o: test-linkedlist.c
